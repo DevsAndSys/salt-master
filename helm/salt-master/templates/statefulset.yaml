@@ -1,0 +1,107 @@
+{{- $clusterDomain := trim (default "" .Values.global.clusterDomain) -}}
+{{- if eq $clusterDomain "" -}}
+{{- fail "values.global.clusterDomain must be set and non-empty" -}}
+{{- end -}}
+apiVersion: apps/v1
+kind: StatefulSet
+metadata:
+  name: {{ include "salt-master.fullname" . }}
+  labels:
+    {{- include "salt-master.labels" . | nindent 4 }}
+spec:
+  serviceName: {{ include "salt-master.headlessServiceName" . }}
+  replicas: {{ .Values.replicaCount }}
+  selector:
+    matchLabels:
+      app.kubernetes.io/name: {{ include "salt-master.name" . }}
+      app.kubernetes.io/instance: {{ .Release.Name }}
+  template:
+    metadata:
+      labels:
+        app.kubernetes.io/name: {{ include "salt-master.name" . }}
+        app.kubernetes.io/instance: {{ .Release.Name }}
+    spec:
+      serviceAccountName: {{ default "default" .Values.serviceAccount.name }}
+      securityContext:
+        {{- toYaml .Values.podSecurityContext | nindent 8 }}
+      containers:
+        - name: salt-master
+          image: "{{ .Values.image.repository }}:{{ .Values.image.tag }}"
+          imagePullPolicy: {{ .Values.image.pullPolicy }}
+          securityContext:
+            {{- toYaml .Values.securityContext | nindent 12 }}
+          ports:
+            - name: publish
+              containerPort: {{ .Values.service.internalPublishPort }}
+              protocol: TCP
+            - name: ret
+              containerPort: {{ .Values.service.internalReturnPort }}
+              protocol: TCP
+          env:
+            {{- if hasKey .Values.env "SALT_MASTER_ID" }}
+            - name: SALT_MASTER_ID
+              value: {{ index .Values.env "SALT_MASTER_ID" | quote }}
+            {{- else }}
+            - name: SALT_MASTER_ID
+              value: "$(POD_NAME).{{ include "salt-master.headlessServiceName" . }}.$(POD_NAMESPACE).svc.{{ $clusterDomain }}"
+            - name: POD_NAME
+              valueFrom:
+                fieldRef:
+                  fieldPath: metadata.name
+            - name: POD_NAMESPACE
+              valueFrom:
+                fieldRef:
+                  fieldPath: metadata.namespace
+            {{- end }}
+            {{- range $key, $val := .Values.env }}
+            {{- if ne $key "SALT_MASTER_ID" }}
+            - name: {{ $key }}
+              value: {{ $val | quote }}
+            {{- end }}
+            {{- end }}
+          volumeMounts:
+            - name: config
+              mountPath: /var/lib/salt/config
+            - name: pki
+              mountPath: /var/lib/salt/pki
+            - name: run
+              mountPath: /var/lib/salt/run
+            - name: cache
+              mountPath: /var/cache/salt
+            - name: log
+              mountPath: /var/log/salt
+          resources:
+            {{- toYaml .Values.resources | nindent 12 }}
+      volumes:
+        - name: config
+          {{- if .Values.persistence.config.enabled }}
+          persistentVolumeClaim:
+            claimName: {{ default (printf "%s-config" (include "salt-master.fullname" .)) .Values.persistence.config.existingClaim }}
+          {{- else }}
+          emptyDir: {}
+          {{- end }}
+        - name: pki
+          {{- if .Values.persistence.pki.enabled }}
+          persistentVolumeClaim:
+            claimName: {{ default (printf "%s-pki" (include "salt-master.fullname" .)) .Values.persistence.pki.existingClaim }}
+          {{- else }}
+          emptyDir: {}
+          {{- end }}
+        - name: run
+          emptyDir: {}
+        - name: cache
+          emptyDir: {}
+        - name: log
+          emptyDir: {}
+      {{- with .Values.nodeSelector }}
+      nodeSelector:
+        {{- toYaml . | nindent 8 }}
+      {{- end }}
+      {{- with .Values.affinity }}
+      affinity:
+        {{- toYaml . | nindent 8 }}
+      {{- end }}
+      {{- with .Values.tolerations }}
+      tolerations:
+        {{- toYaml . | nindent 8 }}
+      {{- end }}

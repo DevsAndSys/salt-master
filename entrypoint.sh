@@ -6,8 +6,6 @@ CONFIG_PATH="${CONFIG_DIR%/}/master"
 PKI_BASE_DIR="${SALT_MASTER_PKI_DIR:-/var/lib/salt/pki}"
 PKI_MASTER_DIR="${PKI_BASE_DIR%/}/master"
 RUN_DIR="${SALT_MASTER_RUN_DIR:-/var/lib/salt/run}"
-GPG_KEYDIR="${SALT_MASTER_GPG_KEYDIR:-}"
-GPG_IMPORT_KEY="${SALT_MASTER_GPG_IMPORT_KEY:-}"
 
 append_list_config() {
   key="$1"
@@ -26,29 +24,11 @@ append_list_config() {
   fi
 }
 
-write_scalar_config() {
-  key="$1"
-  value="$2"
-  if [ -n "$value" ]; then
-    printf "%s: %s\n" "$key" "$value" >> "$CONFIG_PATH"
-  fi
-}
-
-if [ -n "$GPG_KEYDIR" ]; then
-  mkdir -p "$GPG_KEYDIR"
-  chmod 0700 "$GPG_KEYDIR" || true
-fi
-
 mkdir -p "$CONFIG_DIR" "$PKI_MASTER_DIR" "$RUN_DIR/master"
 
 if [ ! -w "$CONFIG_DIR" ] || [ ! -w "$PKI_BASE_DIR" ] || [ ! -w "$RUN_DIR" ]; then
   echo "Error: write access required to $CONFIG_DIR, $PKI_BASE_DIR, and $RUN_DIR" >&2
   echo "Fix volume permissions/ownership for the non-root salt user." >&2
-  exit 1
-fi
-
-if [ -n "$GPG_KEYDIR" ] && [ ! -w "$GPG_KEYDIR" ]; then
-  echo "Error: write access required to $GPG_KEYDIR for GPG keydir" >&2
   exit 1
 fi
 
@@ -121,32 +101,6 @@ EOF
     printf "\n%s\n" "$SALT_MASTER_EXTRA_CONFIG" >> "$CONFIG_PATH"
   fi
 
-  # GitFS configuration
-  append_list_config "fileserver_backend" "${SALT_MASTER_FILESERVER_BACKEND:-}"
-  append_list_config "gitfs_remotes" "${SALT_MASTER_GITFS_REMOTES:-}"
-  write_scalar_config "gitfs_provider" "${SALT_MASTER_GITFS_PROVIDER:-}"
-  write_scalar_config "gitfs_base" "${SALT_MASTER_GITFS_BASE:-}"
-  write_scalar_config "gitfs_root" "${SALT_MASTER_GITFS_ROOT:-}"
-  write_scalar_config "gitfs_privkey" "${SALT_MASTER_GITFS_PRIVKEY:-}"
-  write_scalar_config "gitfs_pubkey" "${SALT_MASTER_GITFS_PUBKEY:-}"
-  write_scalar_config "gitfs_passphrase" "${SALT_MASTER_GITFS_PASSPHRASE:-}"
-  write_scalar_config "gitfs_ssl_verify" "${SALT_MASTER_GITFS_SSL_VERIFY:-}"
-  append_list_config "gitfs_saltenv_whitelist" "${SALT_MASTER_GITFS_SALTENV_WHITELIST:-}"
-  append_list_config "gitfs_saltenv_blacklist" "${SALT_MASTER_GITFS_SALTENV_BLACKLIST:-}"
-
-  if [ -n "${SALT_MASTER_GPG_KEYDIR:-}" ]; then
-    printf "gpg_keydir: %s\n" "$SALT_MASTER_GPG_KEYDIR" >> "$CONFIG_PATH"
-  fi
-
-  if [ -n "${SALT_MASTER_GPG_DECRYPT_MUST_SUCCEED:-}" ]; then
-    printf "gpg_decrypt_must_succeed: %s\n" "$SALT_MASTER_GPG_DECRYPT_MUST_SUCCEED" >> "$CONFIG_PATH"
-  fi
-fi
-
-if [ -n "$GPG_KEYDIR" ] && [ -n "$GPG_IMPORT_KEY" ] && [ -f "$GPG_IMPORT_KEY" ]; then
-  if ! gpg --homedir "$GPG_KEYDIR" --list-secret-keys --with-colons 2>/dev/null | grep -q '^sec:'; then
-    gpg --homedir "$GPG_KEYDIR" --batch --import "$GPG_IMPORT_KEY" >/dev/null
-  fi
 fi
 
 MASTER_PEM="${PKI_MASTER_DIR}/master.pem"

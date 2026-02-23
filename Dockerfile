@@ -1,6 +1,5 @@
 ARG DEPS_IMAGE=debian:bookworm-slim
 FROM ${DEPS_IMAGE}
-ARG SALT_MASTER_REV=4
 
 ENV DEBIAN_FRONTEND=noninteractive \
   PIP_NO_CACHE_DIR=1 \
@@ -11,9 +10,6 @@ COPY requirements.txt /tmp/requirements.txt
 RUN apt-get update \
   && apt-get install -y --no-install-recommends \
     ca-certificates \
-    dirmngr \
-    git \
-    gnupg \
     python3 \
     python3-venv \
   && rm -rf /var/lib/apt/lists/*

@@ -1,0 +1,33 @@
+{{- if and .Values.persistence.config.enabled (not .Values.persistence.config.existingClaim) }}
+apiVersion: v1
+kind: PersistentVolumeClaim
+metadata:
+  name: {{ include "salt-master.fullname" . }}-config
+  labels:
+    {{- include "salt-master.labels" . | nindent 4 }}
+spec:
+  accessModes: {{ toJson .Values.persistence.config.accessModes }}
+  resources:
+    requests:
+      storage: {{ .Values.persistence.config.size }}
+  {{- if .Values.persistence.config.storageClassName }}
+  storageClassName: {{ .Values.persistence.config.storageClassName }}
+  {{- end }}
+---
+{{- end }}
+{{- if and .Values.persistence.pki.enabled (not .Values.persistence.pki.existingClaim) }}
+apiVersion: v1
+kind: PersistentVolumeClaim
+metadata:
+  name: {{ include "salt-master.fullname" . }}-pki
+  labels:
+    {{- include "salt-master.labels" . | nindent 4 }}
+spec:
+  accessModes: {{ toJson .Values.persistence.pki.accessModes }}
+  resources:
+    requests:
+      storage: {{ .Values.persistence.pki.size }}
+  {{- if .Values.persistence.pki.storageClassName }}
+  storageClassName: {{ .Values.persistence.pki.storageClassName }}
+  {{- end }}
+{{- end }}

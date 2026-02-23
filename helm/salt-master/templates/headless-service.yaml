@@ -1,0 +1,21 @@
+apiVersion: v1
+kind: Service
+metadata:
+  name: {{ include "salt-master.headlessServiceName" . }}
+  labels:
+    {{- include "salt-master.labels" . | nindent 4 }}
+spec:
+  clusterIP: None
+  publishNotReadyAddresses: true
+  selector:
+    app.kubernetes.io/name: {{ include "salt-master.name" . }}
+    app.kubernetes.io/instance: {{ .Release.Name }}
+  ports:
+    - name: publish
+      port: {{ .Values.service.internalPublishPort }}
+      targetPort: publish
+      protocol: TCP
+    - name: ret
+      port: {{ .Values.service.internalReturnPort }}
+      targetPort: ret
+      protocol: TCP

@@ -1,0 +1,84 @@
+replicaCount: 1
+
+global:
+  clusterDomain: cluster.local
+
+image:
+  repository: salt-master
+  tag: "smoke"
+  pullPolicy: IfNotPresent
+
+nameOverride: ""
+fullnameOverride: ""
+
+serviceAccount:
+  create: false
+  name: ""
+
+service:
+  type: NodePort
+  internalPublishPort: 4505
+  internalReturnPort: 4506
+  externalTrafficPolicy: Cluster # Cluster | Local (NodePort/LoadBalancer only)
+  annotations: {}
+  nodePort:
+    enabled: true
+    publish: 31505
+    return: 31506
+  loadBalancer:
+    sourceRanges: [] # e.g. ["203.0.113.10/32","198.51.100.0/24"]
+
+podSecurityContext:
+  runAsUser: 10001
+  runAsGroup: 10001
+  runAsNonRoot: true
+  fsGroup: 10001
+  fsGroupChangePolicy: OnRootMismatch
+
+securityContext:
+  allowPrivilegeEscalation: false
+  readOnlyRootFilesystem: true
+  capabilities:
+    drop:
+      - ALL
+
+resources: {}
+
+env:
+  SALT_MASTER_INTERFACE: "0.0.0.0"
+  SALT_MASTER_PUBLISH_PORT: "4505"
+  SALT_MASTER_RETURN_PORT: "4506"
+  SALT_MASTER_WORKER_THREADS: "5"
+  SALT_MASTER_LOG_LEVEL: "info"
+  SALT_MASTER_AUTO_ACCEPT: "False"
+  SALT_MASTER_MAX_OPEN_FILES: "64000"
+  SALT_MASTER_CONFIG_DIR: "/var/lib/salt/config"
+  SALT_MASTER_PKI_DIR: "/var/lib/salt/pki"
+  SALT_MASTER_RUN_DIR: "/var/lib/salt/run"
+  SALT_MASTER_USE_EXISTING_CONFIG: "false"
+
+persistence:
+  config:
+    enabled: true
+    existingClaim: ""
+    storageClassName: ""
+    size: 1Gi
+    accessModes: ["ReadWriteOnce"]
+  pki:
+    enabled: true
+    existingClaim: ""
+    storageClassName: ""
+    size: 1Gi
+    accessModes: ["ReadWriteOnce"]
+
+runtime:
+  runEmptyDir:
+    enabled: true
+  cacheEmptyDir:
+    enabled: true
+  logEmptyDir:
+    enabled: true
+
+nodeSelector: {}
+affinity: {}
+tolerations: []
