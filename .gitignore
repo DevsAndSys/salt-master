@@ -1,0 +1,8 @@
+# never commit runtime key material
+pki/master/*.pem
+pki/master/*.pub
+!pki/master/.gitkeep
+
+# local state
+*.log
+.env
