@@ -6,6 +6,15 @@ CONFIG_PATH="${CONFIG_DIR%/}/master"
 PKI_BASE_DIR="${SALT_MASTER_PKI_DIR:-/var/lib/salt/pki}"
 PKI_MASTER_DIR="${PKI_BASE_DIR%/}/master"
 RUN_DIR="${SALT_MASTER_RUN_DIR:-/var/lib/salt/run}"
+USE_EXISTING_CONFIG="${SALT_MASTER_USE_EXISTING_CONFIG:-false}"
+POD_NAME="${POD_NAME:-}"
+POD_NAMESPACE="${POD_NAMESPACE:-}"
+SALT_MASTER_HEADLESS_SERVICE="${SALT_MASTER_HEADLESS_SERVICE:-}"
+SALT_MASTER_CLUSTER_DOMAIN="${SALT_MASTER_CLUSTER_DOMAIN:-cluster.local}"
+
+if [ -z "${SALT_MASTER_ID:-}" ] && [ -n "$POD_NAME" ] && [ -n "$POD_NAMESPACE" ] && [ -n "$SALT_MASTER_HEADLESS_SERVICE" ]; then
+  SALT_MASTER_ID="${POD_NAME}.${SALT_MASTER_HEADLESS_SERVICE}.${POD_NAMESPACE}.svc.${SALT_MASTER_CLUSTER_DOMAIN}"
+fi
 
 append_list_config() {
   key="$1"
@@ -26,15 +35,25 @@ append_list_config() {
 
 mkdir -p "$CONFIG_DIR" "$PKI_MASTER_DIR" "$RUN_DIR/master"
 
-if [ ! -w "$CONFIG_DIR" ] || [ ! -w "$PKI_BASE_DIR" ] || [ ! -w "$RUN_DIR" ]; then
-  echo "Error: write access required to $CONFIG_DIR, $PKI_BASE_DIR, and $RUN_DIR" >&2
+if [ ! -w "$PKI_BASE_DIR" ] || [ ! -w "$RUN_DIR" ]; then
+  echo "Error: write access required to $PKI_BASE_DIR and $RUN_DIR" >&2
   echo "Fix volume permissions/ownership for the non-root salt user." >&2
   exit 1
 fi
 
-USE_EXISTING_CONFIG="${SALT_MASTER_USE_EXISTING_CONFIG:-false}"
+if [ "$USE_EXISTING_CONFIG" = "true" ]; then
+  if [ ! -r "$CONFIG_PATH" ]; then
+    echo "Error: SALT_MASTER_USE_EXISTING_CONFIG=true but $CONFIG_PATH is missing or unreadable" >&2
+    exit 1
+  fi
+else
+  if [ ! -w "$CONFIG_DIR" ]; then
+    echo "Error: write access required to $CONFIG_DIR when generating master config" >&2
+    exit 1
+  fi
+fi
 
-if [ "$USE_EXISTING_CONFIG" != "true" ] || [ ! -f "$CONFIG_PATH" ]; then
+if [ "$USE_EXISTING_CONFIG" != "true" ]; then
   LOG_LEVEL="${SALT_MASTER_LOG_LEVEL:-info}"
   LOG_FILE="${SALT_MASTER_LOG_FILE:-/dev/stdout}"
 

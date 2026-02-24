@@ -1,0 +1,20 @@
+# salt-master docs
+
+Start here:
+
+- `SUMMARY.md`: documentation table of contents.
+
+Core operations:
+
+- `quickstart.md`: fast deploy/provision flow for Salt operators.
+- `service-exposure.md`: NodePort/ClusterIP/LoadBalancer exposure and security.
+- `identity.md`: StatefulSet identity model and `SALT_MASTER_ID` defaults.
+- `config-management.md`: generated vs external config modes and rollout model.
+
+Advanced Salt workflows:
+
+- `gitfs.md`: enable GitFS with this chart and minimal image constraints.
+- `git-pillar.md`: configure `git_pillar` with SSH-backed pillar repos.
+- `gpg-pillars.md`: encrypt/decrypt sensitive pillar values with GPG.
+- `reactor.md`: configure Salt Reactor on this deployment.
+- `orchestrator.md`: configure and run orchestration states.

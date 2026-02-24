@@ -10,6 +10,16 @@ COPY requirements.txt /tmp/requirements.txt
 RUN apt-get update \
   && apt-get install -y --no-install-recommends \
     ca-certificates \
+    curl \
+    git \
+    gnupg \
+    iproute2 \
+    iputils-ping \
+    netcat-openbsd \
+    openssh-client \
+    procps \
+    rsync \
+    sshpass \
     python3 \
     python3-venv \
   && rm -rf /var/lib/apt/lists/*
@@ -25,7 +35,7 @@ RUN useradd --system --home-dir /var/lib/salt --shell /usr/sbin/nologin --uid 10
 COPY entrypoint.sh /usr/local/bin/entrypoint.sh
 RUN chmod 0755 /usr/local/bin/entrypoint.sh
 
-EXPOSE 4505 4506
+EXPOSE 4505 4506 8000
 
 USER salt
 

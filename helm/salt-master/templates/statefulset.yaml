@@ -2,6 +2,22 @@
 {{- if eq $clusterDomain "" -}}
 {{- fail "values.global.clusterDomain must be set and non-empty" -}}
 {{- end -}}
+{{- $configMode := lower (default "generated" .Values.config.mode) -}}
+{{- if and (ne $configMode "generated") (ne $configMode "external") -}}
+{{- fail "values.config.mode must be either 'generated' or 'external'" -}}
+{{- end -}}
+{{- if eq $configMode "external" -}}
+{{- $externalSource := lower (default "configmap" .Values.config.external.source) -}}
+{{- if and (ne $externalSource "configmap") (ne $externalSource "projected") -}}
+{{- fail "values.config.external.source must be either 'configMap' or 'projected'" -}}
+{{- end -}}
+{{- if and (eq $externalSource "configmap") (eq (trim (include "salt-master.masterConfigMapName" .)) "") -}}
+{{- fail "values.config.external.configMap.name must be set when config.mode=external and configMap.create=false" -}}
+{{- end -}}
+{{- if and (eq $externalSource "projected") (eq (len .Values.config.external.projected.sources) 0) -}}
+{{- fail "values.config.external.projected.sources must be non-empty when config.mode=external and source=projected" -}}
+{{- end -}}
+{{- end -}}
 apiVersion: apps/v1
 kind: StatefulSet
 metadata:
@@ -20,10 +36,46 @@ spec:
       labels:
         app.kubernetes.io/name: {{ include "salt-master.name" . }}
         app.kubernetes.io/instance: {{ .Release.Name }}
+      annotations:
+        {{- with .Values.config.rollout.restartToken }}
+        rollout.restart-token: {{ . | quote }}
+        {{- end }}
+        {{- if and (eq $configMode "external") (eq (lower .Values.config.external.source) "configmap") .Values.config.external.configMap.create }}
+        checksum/master-config: {{ include (print $.Template.BasePath "/configmap-master.yaml") . | sha256sum }}
+        {{- end }}
     spec:
       serviceAccountName: {{ default "default" .Values.serviceAccount.name }}
       securityContext:
         {{- toYaml .Values.podSecurityContext | nindent 8 }}
+      {{- if .Values.volumePermissions.enabled }}
+      initContainers:
+        - name: volume-permissions
+          image: "{{ .Values.volumePermissions.image.repository }}:{{ .Values.volumePermissions.image.tag }}"
+          imagePullPolicy: {{ .Values.volumePermissions.image.pullPolicy }}
+          securityContext:
+            {{- toYaml .Values.volumePermissions.securityContext | nindent 12 }}
+          command:
+            - sh
+            - -ec
+            - |
+              for d in /var/lib/salt/config /var/lib/salt/pki /var/lib/salt/run /var/cache/salt /var/log/salt; do
+                if [ -w "$d" ]; then
+                  chown -R 10001:10001 "$d" || true
+                  chmod -R u+rwX,g+rwX "$d" || true
+                fi
+              done
+          volumeMounts:
+            - name: config
+              mountPath: /var/lib/salt/config
+            - name: pki
+              mountPath: /var/lib/salt/pki
+            - name: run
+              mountPath: /var/lib/salt/run
+            - name: cache
+              mountPath: /var/cache/salt
+            - name: log
+              mountPath: /var/log/salt
+      {{- end }}
       containers:
         - name: salt-master
           image: "{{ .Values.image.repository }}:{{ .Values.image.tag }}"
@@ -38,12 +90,12 @@ spec:
               containerPort: {{ .Values.service.internalReturnPort }}
               protocol: TCP
           env:
+            - name: SALT_MASTER_USE_EXISTING_CONFIG
+              value: {{ ternary "true" "false" (eq $configMode "external") | quote }}
             {{- if hasKey .Values.env "SALT_MASTER_ID" }}
             - name: SALT_MASTER_ID
               value: {{ index .Values.env "SALT_MASTER_ID" | quote }}
-            {{- else }}
-            - name: SALT_MASTER_ID
-              value: "$(POD_NAME).{{ include "salt-master.headlessServiceName" . }}.$(POD_NAMESPACE).svc.{{ $clusterDomain }}"
+            {{- end }}
             - name: POD_NAME
               valueFrom:
                 fieldRef:
@@ -52,9 +104,12 @@ spec:
               valueFrom:
                 fieldRef:
                   fieldPath: metadata.namespace
-            {{- end }}
+            - name: SALT_MASTER_HEADLESS_SERVICE
+              value: {{ include "salt-master.headlessServiceName" . | quote }}
+            - name: SALT_MASTER_CLUSTER_DOMAIN
+              value: {{ $clusterDomain | quote }}
             {{- range $key, $val := .Values.env }}
-            {{- if ne $key "SALT_MASTER_ID" }}
+            {{- if and (ne $key "SALT_MASTER_ID") (ne $key "SALT_MASTER_USE_EXISTING_CONFIG") (ne $key "POD_NAME") (ne $key "POD_NAMESPACE") (ne $key "SALT_MASTER_HEADLESS_SERVICE") (ne $key "SALT_MASTER_CLUSTER_DOMAIN") }}
             - name: {{ $key }}
               value: {{ $val | quote }}
             {{- end }}
@@ -62,6 +117,9 @@ spec:
           volumeMounts:
             - name: config
               mountPath: /var/lib/salt/config
+              {{- if eq $configMode "external" }}
+              readOnly: true
+              {{- end }}
             - name: pki
               mountPath: /var/lib/salt/pki
             - name: run
@@ -74,7 +132,21 @@ spec:
             {{- toYaml .Values.resources | nindent 12 }}
       volumes:
         - name: config
-          {{- if .Values.persistence.config.enabled }}
+          {{- if eq $configMode "external" }}
+          {{- if eq (lower .Values.config.external.source) "configmap" }}
+          configMap:
+            name: {{ include "salt-master.masterConfigMapName" . }}
+            optional: {{ .Values.config.external.configMap.optional }}
+            items:
+              - key: {{ .Values.config.external.configMap.key }}
+                path: master
+          {{- else }}
+          projected:
+            defaultMode: {{ .Values.config.external.projected.defaultMode }}
+            sources:
+              {{- toYaml .Values.config.external.projected.sources | nindent 14 }}
+          {{- end }}
+          {{- else if .Values.persistence.config.enabled }}
           persistentVolumeClaim:
             claimName: {{ default (printf "%s-config" (include "salt-master.fullname" .)) .Values.persistence.config.existingClaim }}
           {{- else }}

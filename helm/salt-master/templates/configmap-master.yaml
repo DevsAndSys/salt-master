@@ -1,0 +1,14 @@
+{{- if and (eq .Values.config.mode "external") (eq .Values.config.external.source "configMap") .Values.config.external.configMap.create }}
+{{- if eq (trim (default "" .Values.config.external.configMap.data)) "" -}}
+{{- fail "values.config.external.configMap.data must be set when values.config.external.configMap.create=true" -}}
+{{- end -}}
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: {{ include "salt-master.masterConfigMapName" . }}
+  labels:
+    {{- include "salt-master.labels" . | nindent 4 }}
+data:
+  {{ .Values.config.external.configMap.key }}: |
+{{ .Values.config.external.configMap.data | nindent 4 }}
+{{- end }}
