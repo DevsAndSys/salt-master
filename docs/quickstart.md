@@ -65,6 +65,9 @@ kubectl -n salt exec salt-master-salt-master-0 -- sh -lc '
 '
 ```
 
+Right after key acceptance, the first `test.ping` may return no response while minions finish startup.
+Re-run `test.ping` once before continuing.
+
 ## 6) Apply states
 
 ```bash
@@ -88,11 +91,12 @@ See `docs/service-exposure.md` for service mode details.
 
 ## Last validated
 
-- Timestamp (UTC): `2026-02-24T00:35:25Z`
+- Timestamp (UTC): `2026-02-24T01:24:20Z`
 - Kubernetes: `v1.34.0`
-- Salt release: `salt-master` revision `12` in namespace `salt`
-- Verified flow: GHCR chart deploy, key acceptance, `test.ping`, `state.highstate`, and `state.orchestrate`
+- Salt release: `salt-master` revision `13` in namespace `salt`
+- Verified flow: GHCR chart deploy (`0.1.0`) + GHCR image (`v0.0.8`), key acceptance, `test.ping`, `state.highstate`, and `state.orchestrate`
 
 Validation notes from this run:
 
 - `orch/deploy.sls` was seeded as part of step 3 so the optional orchestrate step can run successfully.
+- Anonymous pulls from GHCR were verified: chart (`oci://ghcr.io/devsandsys/charts/salt-master:0.1.0`) and image (`ghcr.io/devsandsys/salt-master:v0.0.7`).
