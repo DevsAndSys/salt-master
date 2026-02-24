@@ -20,8 +20,8 @@ config:
       sources: [] # raw projected sources list
 
 image:
-  repository: salt-master
-  tag: "smoke"
+  repository: ghcr.io/devsandsys/salt-master
+  tag: "latest" # CI also publishes semver tags (vX.Y.Z) for pinning
   pullPolicy: IfNotPresent
 
 nameOverride: ""
