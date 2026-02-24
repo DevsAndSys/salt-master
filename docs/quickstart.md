@@ -2,16 +2,13 @@
 
 This is the fast path to deploy Salt master and start managing minions.
 
-## 1) Authenticate to GHCR (required for private org packages)
+## 1) Verify chart access
 
 ```bash
-echo "${GITHUB_TOKEN}" | helm registry login ghcr.io -u "${GITHUB_USER}" --password-stdin
-
-# Preflight: verify chart pull access before install
 helm show chart oci://ghcr.io/devsandsys/charts/salt-master --version 0.1.0
 ```
 
-`GITHUB_TOKEN`/PAT must include `read:packages` and be authorized for the `DevsAndSys` org (SSO-enabled orgs require explicit token authorization).
+If this command returns auth errors, confirm `salt-master` and chart packages are public in GHCR.
 
 ## 2) Deploy Salt master
 

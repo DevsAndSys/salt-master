@@ -8,15 +8,14 @@ Published artifacts:
 ## Quick start (GHCR)
 
 ```bash
-# Optional: authenticate for private org packages
-echo "${GITHUB_TOKEN}" | helm registry login ghcr.io -u "${GITHUB_USER}" --password-stdin
-
 # Install directly from published chart + published image
 helm upgrade --install salt-master oci://ghcr.io/devsandsys/charts/salt-master \
   --version 0.1.0 \
   --set image.repository=ghcr.io/devsandsys/salt-master \
   --set image.tag=vX.Y.Z
 ```
+
+If pull/install fails with auth errors, re-check package visibility in GHCR.
 
 For deterministic deploys in GitOps, pin both:
 - chart version (`--version`, for example `0.1.0`)
