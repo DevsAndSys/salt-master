@@ -2,20 +2,25 @@
 
 This is the fast path to deploy Salt master and start managing minions.
 
-## 1) Build image
+## 1) Authenticate to GHCR (required for private org packages)
 
 ```bash
-cd /home/dixan/projects/devsandsys/repo/salt-master
-docker build -t salt-master:local .
+echo "${GITHUB_TOKEN}" | helm registry login ghcr.io -u "${GITHUB_USER}" --password-stdin
+
+# Preflight: verify chart pull access before install
+helm show chart oci://ghcr.io/devsandsys/charts/salt-master --version 0.1.0
 ```
+
+`GITHUB_TOKEN`/PAT must include `read:packages` and be authorized for the `DevsAndSys` org (SSO-enabled orgs require explicit token authorization).
 
 ## 2) Deploy Salt master
 
 ```bash
-helm upgrade --install salt-master ./helm/salt-master \
+helm upgrade --install salt-master oci://ghcr.io/devsandsys/charts/salt-master \
+  --version 0.1.0 \
   -n salt --create-namespace \
-  --set image.repository=salt-master \
-  --set image.tag=local \
+  --set image.repository=ghcr.io/devsandsys/salt-master \
+  --set image.tag=vX.Y.Z \
   --set-string env.SALT_MASTER_FILE_ROOTS=/var/lib/salt/config/states \
   --set env.SALT_MASTER_AUTO_ACCEPT=False
 
@@ -89,7 +94,7 @@ See `docs/service-exposure.md` for service mode details.
 - Timestamp (UTC): `2026-02-24T00:35:25Z`
 - Kubernetes: `v1.34.0`
 - Salt release: `salt-master` revision `12` in namespace `salt`
-- Verified flow: deploy, key acceptance, `test.ping`, `state.highstate`, and `state.orchestrate`
+- Verified flow: GHCR chart deploy, key acceptance, `test.ping`, `state.highstate`, and `state.orchestrate`
 
 Validation notes from this run:
 

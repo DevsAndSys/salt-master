@@ -20,7 +20,10 @@ Kubernetes policy controls.
 ### NodePort example
 
 ```bash
-helm upgrade --install salt-master ./helm/salt-master \
+helm upgrade --install salt-master oci://ghcr.io/devsandsys/charts/salt-master \
+  --version 0.1.0 \
+  --set image.repository=ghcr.io/devsandsys/salt-master \
+  --set image.tag=vX.Y.Z \
   --set service.type=NodePort \
   --set service.nodePort.enabled=true \
   --set service.nodePort.publish=31505 \
@@ -30,7 +33,10 @@ helm upgrade --install salt-master ./helm/salt-master \
 ### LoadBalancer example
 
 ```bash
-helm upgrade --install salt-master ./helm/salt-master \
+helm upgrade --install salt-master oci://ghcr.io/devsandsys/charts/salt-master \
+  --version 0.1.0 \
+  --set image.repository=ghcr.io/devsandsys/salt-master \
+  --set image.tag=vX.Y.Z \
   --set service.type=LoadBalancer \
   --set service.externalTrafficPolicy=Local \
   --set service.loadBalancer.sourceRanges[0]=203.0.113.10/32

@@ -1,18 +1,31 @@
 # salt-master
 
-Repository layout:
+Published artifacts:
 
-- Container: `Dockerfile`, `entrypoint.sh`, `requirements.txt`
-- Helm chart: `helm/salt-master`
-- Docs: `docs/`
+- Image: `ghcr.io/devsandsys/salt-master`
+- Helm chart (OCI): `oci://ghcr.io/devsandsys/charts/salt-master`
 
-## Quick start
+## Quick start (GHCR)
 
 ```bash
-docker build -t salt-master:local .
-helm upgrade --install salt-master ./helm/salt-master \
-  --set image.repository=salt-master \
-  --set image.tag=local
+# Optional: authenticate for private org packages
+echo "${GITHUB_TOKEN}" | helm registry login ghcr.io -u "${GITHUB_USER}" --password-stdin
+
+# Install directly from published chart + published image
+helm upgrade --install salt-master oci://ghcr.io/devsandsys/charts/salt-master \
+  --version 0.1.0 \
+  --set image.repository=ghcr.io/devsandsys/salt-master \
+  --set image.tag=vX.Y.Z
+```
+
+For deterministic deploys in GitOps, pin both:
+- chart version (`--version`, for example `0.1.0`)
+- image tag (`vX.Y.Z` semver produced by CI), not `latest`
+
+Latest released image tags:
+
+```bash
+gh api repos/DevsAndSys/salt-master/tags --paginate | jq -r '.[].name' | sort -V | tail
 ```
 
 ## Feature matrix
