@@ -90,3 +90,27 @@ jobs:
           labels: ${{ steps.meta.outputs.labels }}
           cache-from: type=gha
           cache-to: type=gha,mode=max
+
+      - name: Write release summary
+        shell: bash
+        run: |
+          set -euo pipefail
+          image="${{ steps.image.outputs.name }}"
+          tag="${{ steps.semver.outputs.tag }}"
+          version="${{ steps.semver.outputs.version }}"
+          {
+            echo "## Docker release summary"
+            echo
+            echo "- Image: \`${image}\`"
+            echo "- Released tag: \`${tag}\`"
+            echo "- Version: \`${version}\`"
+            echo "- Mutable tag also updated: \`latest\`"
+            echo
+            echo "### Deterministic deploy pin"
+            echo
+            echo '```bash'
+            echo "helm upgrade --install salt-master ./helm/salt-master \\"
+            echo "  --set image.repository=${image} \\"
+            echo "  --set image.tag=${tag}"
+            echo '```'
+          } >> "$GITHUB_STEP_SUMMARY"

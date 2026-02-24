@@ -41,9 +41,14 @@ jobs:
             --password-stdin
 
       - name: Lint and package chart
+        id: chart
         shell: bash
         run: |
           set -euo pipefail
+          chart_version="$(awk -F': ' '/^version:/{print $2}' ./helm/salt-master/Chart.yaml | tr -d '"')"
+          app_version="$(awk -F': ' '/^appVersion:/{print $2}' ./helm/salt-master/Chart.yaml | tr -d '"')"
+          echo "version=${chart_version}" >> "$GITHUB_OUTPUT"
+          echo "app_version=${app_version}" >> "$GITHUB_OUTPUT"
           mkdir -p dist
           helm lint ./helm/salt-master
           helm package ./helm/salt-master --destination ./dist
@@ -54,3 +59,26 @@ jobs:
           set -euo pipefail
           chart_pkg="$(ls -1 ./dist/salt-master-*.tgz | head -n1)"
           helm push "${chart_pkg}" "oci://ghcr.io/${{ steps.owner.outputs.value }}/charts"
+
+      - name: Write chart release summary
+        shell: bash
+        run: |
+          set -euo pipefail
+          chart_ref="oci://ghcr.io/${{ steps.owner.outputs.value }}/charts/salt-master"
+          chart_version="${{ steps.chart.outputs.version }}"
+          app_version="${{ steps.chart.outputs.app_version }}"
+          {
+            echo "## Helm chart release summary"
+            echo
+            echo "- Chart: \`${chart_ref}\`"
+            echo "- Chart version: \`${chart_version}\`"
+            echo "- App version: \`${app_version}\`"
+            echo
+            echo "### Deterministic deploy pin"
+            echo
+            echo '```bash'
+            echo "helm upgrade --install salt-master ${chart_ref} \\"
+            echo "  --version ${chart_version} \\"
+            echo "  --set image.tag=vX.Y.Z"
+            echo '```'
+          } >> "$GITHUB_STEP_SUMMARY"
