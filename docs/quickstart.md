@@ -89,14 +89,32 @@ kubectl -n salt exec salt-master-salt-master-0 -- sh -lc '
 Keep inbound access to `4505/tcp` and `4506/tcp` restricted to known minion CIDRs.
 See `docs/service-exposure.md` for service mode details.
 
+## Troubleshooting: non-root minion runtime paths
+
+When running `salt-minion` from this image as non-root, default paths under `/etc/salt`
+and `/var/run` can fail with permission errors.
+
+Use explicit writable paths in a minion config, for example:
+
+```yaml
+pki_dir: /tmp/salt/pki
+cachedir: /tmp/salt/cache
+sock_dir: /tmp/salt/run
+log_file: /tmp/salt/minion.log
+pidfile: /tmp/salt/minion.pid
+```
+
+If the first `test.ping` after key acceptance returns no response, re-run once after a short delay.
+
 ## Last validated
 
-- Timestamp (UTC): `2026-02-24T01:24:20Z`
+- Timestamp (UTC): `2026-02-24T01:29:50Z`
 - Kubernetes: `v1.34.0`
-- Salt release: `salt-master` revision `13` in namespace `salt`
-- Verified flow: GHCR chart deploy (`0.1.0`) + GHCR image (`v0.0.8`), key acceptance, `test.ping`, `state.highstate`, and `state.orchestrate`
+- Salt release: `salt-master-e2e` revision `2` in namespace `salt-e2e`
+- Verified flow: GHCR chart deploy (`0.1.0`) + GHCR image (`v0.0.9`), key acceptance, `test.ping`, `state.highstate`, and `state.orchestrate`
 
 Validation notes from this run:
 
 - `orch/deploy.sls` was seeded as part of step 3 so the optional orchestrate step can run successfully.
 - Anonymous pulls from GHCR were verified: chart (`oci://ghcr.io/devsandsys/charts/salt-master:0.1.0`) and image (`ghcr.io/devsandsys/salt-master:v0.0.7`).
+- Clean-room namespace validation used `service.type=ClusterIP` to avoid NodePort collision with existing `salt` namespace release.
