@@ -75,6 +75,18 @@ volumePermissions:
 
 resources: {}
 
+readinessProbe:
+  enabled: false
+  initialDelaySeconds: 3
+  periodSeconds: 10
+  timeoutSeconds: 3
+  failureThreshold: 3
+  successThreshold: 1
+  command:
+    - sh
+    - -ec
+    - gpg --homedir /var/lib/salt/gpgkeys --list-secret-keys --with-colons | grep -q '^sec:'
+
 env:
   SALT_MASTER_INTERFACE: "0.0.0.0"
   SALT_MASTER_PUBLISH_PORT: "4505"

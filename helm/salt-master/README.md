@@ -23,6 +23,7 @@ embedding secret material in Git:
 - `extraEnv`: container env entries including `valueFrom`.
 - `envFrom`: `secretRef`/`configMapRef` entries.
 - `extraInitContainers`: raw init containers (for runtime preparation steps).
+- `readinessProbe`: optional exec-based readiness checks.
 - `extraVolumes`: raw volumes (for example, secret or PVC volumes).
 - `extraVolumeMounts`: raw mounts paired with `extraVolumes`.
 
