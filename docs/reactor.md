@@ -41,7 +41,45 @@ reactor:
     - salt://reactor/pr_highstate_guard.sls
 ```
 
-Recommended behavior:
+Example `reactor/pr_highstate_guard.sls`:
+
+```jinja
+{# Guard only reacts to new state.apply jobs. #}
+{% set fun = data.get('fun', '') %}
+{% set meta = data.get('metadata', {}) %}
+{% set is_state_apply = fun == 'state.apply' %}
+{% set is_pr_change = meta.get('pr_change', False) %}
+{% set approved = meta.get('approved', False) %}
+
+{% if is_state_apply %}
+{% if is_pr_change and approved %}
+pr_highstate_guard_allow:
+  runner.event.send:
+    - tag: salt/reactor/pr_highstate_guard/allowed
+    - data:
+        jid: "{{ data.get('jid', '') }}"
+        tgt: "{{ data.get('tgt', '') }}"
+        user: "{{ data.get('user', '') }}"
+{% else %}
+pr_highstate_guard_deny:
+  runner.event.send:
+    - tag: salt/reactor/pr_highstate_guard/denied
+    - data:
+        jid: "{{ data.get('jid', '') }}"
+        tgt: "{{ data.get('tgt', '') }}"
+        user: "{{ data.get('user', '') }}"
+        reason: "missing required metadata: pr_change=true and approved=true"
+{% endif %}
+{% endif %}
+```
+
+What this does:
+
+- Watches `salt/job/*/new` events.
+- Evaluates only `state.apply` jobs.
+- Emits explicit `allowed`/`denied` events your automation can route on.
+
+Recommended behavior in production:
 
 - Exit early for non-PR jobs.
 - Perform only policy checks and lightweight routing decisions.
