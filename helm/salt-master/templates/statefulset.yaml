@@ -45,6 +45,10 @@ spec:
         {{- end }}
     spec:
       serviceAccountName: {{ default "default" .Values.serviceAccount.name }}
+      {{- with .Values.imagePullSecrets }}
+      imagePullSecrets:
+        {{- toYaml . | nindent 8 }}
+      {{- end }}
       securityContext:
         {{- toYaml .Values.podSecurityContext | nindent 8 }}
       {{- if .Values.volumePermissions.enabled }}
@@ -114,6 +118,13 @@ spec:
               value: {{ $val | quote }}
             {{- end }}
             {{- end }}
+            {{- with .Values.extraEnv }}
+            {{- toYaml . | nindent 12 }}
+            {{- end }}
+          {{- with .Values.envFrom }}
+          envFrom:
+            {{- toYaml . | nindent 12 }}
+          {{- end }}
           volumeMounts:
             - name: config
               mountPath: /var/lib/salt/config
@@ -128,6 +139,9 @@ spec:
               mountPath: /var/cache/salt
             - name: log
               mountPath: /var/log/salt
+            {{- with .Values.extraVolumeMounts }}
+            {{- toYaml . | nindent 12 }}
+            {{- end }}
           resources:
             {{- toYaml .Values.resources | nindent 12 }}
       volumes:
@@ -165,6 +179,9 @@ spec:
           emptyDir: {}
         - name: log
           emptyDir: {}
+        {{- with .Values.extraVolumes }}
+        {{- toYaml . | nindent 8 }}
+        {{- end }}
       {{- with .Values.nodeSelector }}
       nodeSelector:
         {{- toYaml . | nindent 8 }}

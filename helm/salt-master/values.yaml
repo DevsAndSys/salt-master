@@ -24,6 +24,8 @@ image:
   tag: "latest" # CI also publishes semver tags (vX.Y.Z) for pinning
   pullPolicy: IfNotPresent
 
+imagePullSecrets: []
+
 nameOverride: ""
 fullnameOverride: ""
 
@@ -86,6 +88,12 @@ env:
   SALT_MASTER_RUN_DIR: "/var/lib/salt/run"
   SALT_MASTER_USE_EXISTING_CONFIG: "false"
 
+# Additional environment variables that need valueFrom (for example, secrets).
+extraEnv: []
+
+# Optional envFrom references (for example, secretRef/configMapRef).
+envFrom: []
+
 persistence:
   config:
     enabled: true
@@ -111,3 +119,9 @@ runtime:
 nodeSelector: {}
 affinity: {}
 tolerations: []
+
+# Raw Kubernetes volume mounts appended to the salt-master container.
+extraVolumeMounts: []
+
+# Raw Kubernetes volumes appended to the pod spec.
+extraVolumes: []
