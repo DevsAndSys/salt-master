@@ -22,6 +22,7 @@ embedding secret material in Git:
 - `imagePullSecrets`: image pull secret references.
 - `extraEnv`: container env entries including `valueFrom`.
 - `envFrom`: `secretRef`/`configMapRef` entries.
+- `extraInitContainers`: raw init containers (for runtime preparation steps).
 - `extraVolumes`: raw volumes (for example, secret or PVC volumes).
 - `extraVolumeMounts`: raw mounts paired with `extraVolumes`.
 

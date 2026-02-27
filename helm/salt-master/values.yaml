@@ -94,6 +94,9 @@ extraEnv: []
 # Optional envFrom references (for example, secretRef/configMapRef).
 envFrom: []
 
+# Raw Kubernetes init containers appended to the pod spec.
+extraInitContainers: []
+
 persistence:
   config:
     enabled: true
