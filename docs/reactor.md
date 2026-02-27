@@ -27,3 +27,22 @@ master config with read-only root filesystem.
 - Keep reactor handlers idempotent.
 - Avoid long/blocking handlers; trigger orchestration jobs instead.
 - Restrict who can emit custom events if exposing event APIs.
+
+## PR highstate guard (optional pattern)
+
+Use a guard reactor to inspect new job events and allow/block PR-related
+highstate behavior based on your policy.
+
+Example mapping:
+
+```yaml
+reactor:
+  - 'salt/job/*/new':
+    - salt://reactor/pr_highstate_guard.sls
+```
+
+Recommended behavior:
+
+- Exit early for non-PR jobs.
+- Perform only policy checks and lightweight routing decisions.
+- Delegate long-running work to orchestrate runners/jobs.
