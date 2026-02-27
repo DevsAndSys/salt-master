@@ -27,6 +27,24 @@ Latest released image tags:
 gh api repos/DevsAndSys/salt-master/tags --paginate | jq -r '.[].name' | sort -V | tail
 ```
 
+## Release hygiene (maintainers)
+
+If a bad release commit/tag is pushed by mistake, use this cleanup flow:
+
+```bash
+# 1) Reset main to known-good commit and force push
+git checkout main
+git reset --hard <good_commit_sha>
+git push --force-with-lease origin main
+
+# 2) Delete accidental remote tags
+git push origin :refs/tags/<bad_tag_1> :refs/tags/<bad_tag_2>
+
+# 3) Delete workflow runs tied to bad SHAs
+gh run list --repo DevsAndSys/salt-master --limit 200 --json databaseId,headSha
+gh api -X DELETE /repos/DevsAndSys/salt-master/actions/runs/<run_id>
+```
+
 ## Feature matrix
 
 ### Included binaries
