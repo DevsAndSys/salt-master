@@ -64,7 +64,7 @@ spec:
             - sh
             - -ec
             - |
-              for d in /var/lib/salt/config /var/lib/salt/pki /var/lib/salt/run /var/cache/salt /var/log/salt /var/lib/salt/gpgkeys; do
+              for d in /var/lib/salt/config /var/lib/salt/pki /var/lib/salt/run /var/cache/salt /var/log/salt /var/lib/salt/gpgkeys /var/lib/salt/extmods; do
                 if [ -w "$d" ]; then
                   chown -R 10001:10001 "$d" || true
                   chmod -R u+rwX,g+rwX "$d" || true
@@ -81,6 +81,10 @@ spec:
               mountPath: /var/cache/salt
             - name: log
               mountPath: /var/log/salt
+            {{- if .Values.runtime.extmodsEmptyDir.enabled }}
+            - name: extmods
+              mountPath: /var/lib/salt/extmods
+            {{- end }}
             {{- with .Values.extraVolumeMounts }}
             {{- toYaml . | nindent 12 }}
             {{- end }}
@@ -159,6 +163,10 @@ spec:
               mountPath: /var/cache/salt
             - name: log
               mountPath: /var/log/salt
+            {{- if .Values.runtime.extmodsEmptyDir.enabled }}
+            - name: extmods
+              mountPath: /var/lib/salt/extmods
+            {{- end }}
             {{- with .Values.extraVolumeMounts }}
             {{- toYaml . | nindent 12 }}
             {{- end }}
@@ -199,6 +207,10 @@ spec:
           emptyDir: {}
         - name: log
           emptyDir: {}
+        {{- if .Values.runtime.extmodsEmptyDir.enabled }}
+        - name: extmods
+          emptyDir: {}
+        {{- end }}
         {{- with .Values.extraVolumes }}
         {{- toYaml . | nindent 8 }}
         {{- end }}

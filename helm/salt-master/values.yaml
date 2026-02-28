@@ -130,6 +130,8 @@ runtime:
     enabled: true
   logEmptyDir:
     enabled: true
+  extmodsEmptyDir:
+    enabled: true
 
 nodeSelector: {}
 affinity: {}

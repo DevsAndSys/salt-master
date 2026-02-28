@@ -93,6 +93,10 @@ persistence:
     enabled: true
     existingClaim: salt-master-pki
 
+runtime:
+  extmodsEmptyDir:
+    enabled: true
+
 extraEnv:
   - name: CLOUD_API_TOKEN
     valueFrom:
