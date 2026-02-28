@@ -7,6 +7,8 @@ on:
     paths:
       - "helm/salt-master/**"
       - ".github/workflows/helm-chart-ghcr.yml"
+    paths-ignore:
+      - "**/*.md"
   workflow_dispatch:
 
 concurrency:

@@ -32,15 +32,16 @@ gh api repos/DevsAndSys/salt-master/tags --paginate | jq -r '.[].name' | sort -V
 If a bad release commit/tag is pushed by mistake, use this cleanup flow:
 
 ```bash
-# 1) Reset main to known-good commit and force push
-git checkout main
-git reset --hard <good_commit_sha>
-git push --force-with-lease origin main
+# 1) Revert bad commits in a dedicated fix branch (no history rewrite on main)
+git checkout -b fix/revert-bad-release origin/main
+git revert --no-edit <bad_commit_sha_1> [<bad_commit_sha_2> ...]
+git push -u origin fix/revert-bad-release
+# Open a PR and merge after checks pass
 
 # 2) Delete accidental remote tags
 git push origin :refs/tags/<bad_tag_1> :refs/tags/<bad_tag_2>
 
-# 3) Delete workflow runs tied to bad SHAs
+# 3) (Optional) Delete workflow runs tied to bad SHAs
 gh run list --repo DevsAndSys/salt-master --limit 200 --json databaseId,headSha
 gh api -X DELETE /repos/DevsAndSys/salt-master/actions/runs/<run_id>
 ```

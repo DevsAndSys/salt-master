@@ -4,6 +4,8 @@ on:
   push:
     branches:
       - main
+    paths-ignore:
+      - "**/*.md"
   workflow_dispatch:
 
 concurrency:
@@ -52,16 +54,6 @@ jobs:
           echo "latest=${latest_tag}" >> "$GITHUB_OUTPUT"
           echo "tag=${next_tag}" >> "$GITHUB_OUTPUT"
           echo "version=${next_tag#v}" >> "$GITHUB_OUTPUT"
-
-      - name: Create and push semver tag
-        shell: bash
-        run: |
-          set -euo pipefail
-          tag="${{ steps.semver.outputs.tag }}"
-          git config user.name "github-actions[bot]"
-          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
-          git tag -a "${tag}" -m "Release ${tag}"
-          git push origin "${tag}"
 
       - name: Set up Docker Buildx
         uses: docker/setup-buildx-action@v3
@@ -158,6 +150,16 @@ jobs:
           tags: ${{ steps.targets.outputs.tags }}
           cache-from: type=gha
           cache-to: type=gha,mode=max
+
+      - name: Create and push semver tag
+        shell: bash
+        run: |
+          set -euo pipefail
+          tag="${{ steps.semver.outputs.tag }}"
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git tag -a "${tag}" -m "Release ${tag}"
+          git push origin "${tag}"
 
       - name: Write release summary
         shell: bash
