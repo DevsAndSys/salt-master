@@ -5,19 +5,19 @@ This is the fast path to deploy Salt master and start managing minions.
 ## 1) Verify chart access
 
 ```bash
-helm show chart oci://ghcr.io/devsandsys/charts/salt-master --version 0.1.0
+helm show chart oci://ghcr.io/devsandsys/charts/salt-master --version <chart-version>
 ```
 
-If this command returns auth errors, confirm `salt-master` and chart packages are public in GHCR.
+If this command returns auth errors, confirm the image and chart packages are public in GHCR.
 
-Published packages are release-driven. If the package was deleted or made private,
-re-publish from a GitHub Release and then restore package visibility to `Public`.
+Published packages are release-driven. If a package was deleted or made private,
+re-publish it from a GitHub Release and restore package visibility to `Public`.
 
 ## 2) Deploy Salt master
 
 ```bash
 helm upgrade --install salt-master oci://ghcr.io/devsandsys/charts/salt-master \
-  --version 0.1.0 \
+  --version <chart-version> \
   -n salt --create-namespace \
   --set image.repository=ghcr.io/devsandsys/salt-master \
   --set image.tag=vX.Y.Z \
@@ -69,7 +69,9 @@ kubectl -n salt exec salt-master-salt-master-0 -- sh -lc '
 ```
 
 Right after key acceptance, the first `test.ping` may return no response while minions finish startup.
-Re-run `test.ping` once before continuing.
+Run `test.ping` once more before continuing.
+
+By default, the chart Service is `NodePort`, so `<MASTER_IP_OR_DNS>` must be reachable by minions on the published Salt ports.
 
 ## 6) Apply states
 
@@ -95,16 +97,20 @@ See `docs/service-exposure.md` for service mode details.
 ## Troubleshooting: non-root minion runtime paths
 
 When running `salt-minion` from this image as non-root, default paths under `/etc/salt`
-and `/var/run` can fail with permission errors.
+and `/var/run` can cause permission errors.
 
-Use explicit writable paths in a minion config, for example:
+Do not place `pki_dir` on `/tmp`. If that directory is cleared, the minion loses
+its cached keys and has to re-establish trust with the master.
+
+Use persistent writable paths for PKI and cache. Reserve `/tmp` only for
+short-lived runtime files if needed. For example:
 
 ```yaml
-pki_dir: /tmp/salt/pki
-cachedir: /tmp/salt/cache
-sock_dir: /tmp/salt/run
-log_file: /tmp/salt/minion.log
-pidfile: /tmp/salt/minion.pid
+pki_dir: /var/lib/salt/pki/minion
+cachedir: /var/cache/salt/minion
+sock_dir: /var/run/salt/minion
+log_file: /var/log/salt/minion
+pidfile: /var/run/salt/minion.pid
 ```
 
-If the first `test.ping` after key acceptance returns no response, re-run once after a short delay.
+If the first `test.ping` after key acceptance returns no response, try again after a short delay.

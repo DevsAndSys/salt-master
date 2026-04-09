@@ -14,7 +14,7 @@ Core operations:
 
 Advanced Salt workflows:
 
-- `gitfs.md`: enable GitFS with this chart and minimal image constraints.
+- `gitfs.md`: enable GitFS with the image's built-in Git tooling.
 - `git-pillar.md`: configure `git_pillar` with SSH-backed pillar repos.
 - `gpg-pillars.md`: encrypt/decrypt sensitive pillar values with GPG.
 - `reactor.md`: configure Salt Reactor on this deployment.

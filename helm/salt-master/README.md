@@ -6,13 +6,13 @@ Minimal StatefulSet-based chart for Salt master.
 
 ```bash
 helm upgrade --install salt-master oci://ghcr.io/devsandsys/charts/salt-master \
-  --version 0.1.3 \
+  --version <chart-version> \
   --set image.repository=ghcr.io/devsandsys/salt-master \
   --set image.tag=vX.Y.Z
 ```
 
-`image.tag` should point to the GitHub Release tag (`vX.Y.Z`).
-If `image.tag` is empty, the chart falls back to `.Chart.AppVersion`.
+`image.tag` should point to the GitHub Release tag `vX.Y.Z`.
+The chart default is `latest`; if `image.tag` is set to an empty value, the template falls back to `.Chart.AppVersion`.
 
 The chart package is published when a GitHub Release is published for this repo.
 If pulls fail with auth errors, confirm the GHCR chart package visibility is `Public`.
@@ -23,21 +23,21 @@ Start from:
 
 - `values.example.public.yaml`
 
-This file mirrors a production-style setup (external config, secret refs, GPG
-key prep, readiness probe) while keeping all identities and sensitive data as
-placeholders.
+This file is a realistic reference profile with external config, Git-backed
+states and pillar, secret refs, GPG key preparation, and a Salt port readiness
+check. All identities and sensitive data remain placeholders.
 
 ## Public-safe extension points
 
-Use chart values to reference existing Kubernetes Secrets/ConfigMaps without
+Use chart values to reference existing Kubernetes Secrets and ConfigMaps without
 embedding secret material in Git:
 
 - `imagePullSecrets`: image pull secret references.
 - `extraEnv`: container env entries including `valueFrom`.
 - `envFrom`: `secretRef`/`configMapRef` entries.
-- `extraInitContainers`: raw init containers (for runtime preparation steps).
+- `extraInitContainers`: raw init containers for runtime preparation steps.
 - `readinessProbe`: optional exec-based readiness checks.
-- `extraVolumes`: raw volumes (for example, secret or PVC volumes).
+- `extraVolumes`: raw volumes such as secret or PVC volumes.
 - `extraVolumeMounts`: raw mounts paired with `extraVolumes`.
 
 Example:
