@@ -10,6 +10,9 @@ helm show chart oci://ghcr.io/devsandsys/charts/salt-master --version 0.1.0
 
 If this command returns auth errors, confirm `salt-master` and chart packages are public in GHCR.
 
+Published packages are release-driven. If the package was deleted or made private,
+re-publish from a GitHub Release and then restore package visibility to `Public`.
+
 ## 2) Deploy Salt master
 
 ```bash

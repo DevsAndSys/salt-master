@@ -19,7 +19,7 @@ If pull/install fails with auth errors, re-check package visibility in GHCR.
 
 For deterministic deploys in GitOps, pin both:
 - chart version (`--version`, for example `0.1.0`)
-- image tag (`vX.Y.Z` semver produced by CI), not `latest`
+- image tag (`vX.Y.Z` from an explicit GitHub Release), not `latest`
 
 Latest released image tags:
 
@@ -28,6 +28,13 @@ gh api repos/DevsAndSys/salt-master/tags --paginate | jq -r '.[].name' | sort -V
 ```
 
 ## Release hygiene (maintainers)
+
+Package publication is now release-driven. Pushing to `main` does not publish public
+artifacts. Maintainers publish the image/chart by creating a GitHub Release (or by
+running the publish workflows manually with an explicit tag for the image).
+
+Before publishing, confirm the GHCR package pages are set to public visibility if
+these artifacts are meant for anonymous pulls.
 
 If a bad release commit/tag is pushed by mistake, use this cleanup flow:
 
@@ -44,6 +51,21 @@ git push origin :refs/tags/<bad_tag_1> :refs/tags/<bad_tag_2>
 # 3) (Optional) Delete workflow runs tied to bad SHAs
 gh run list --repo DevsAndSys/salt-master --limit 200 --json databaseId,headSha
 gh api -X DELETE /repos/DevsAndSys/salt-master/actions/runs/<run_id>
+```
+
+Release sequence:
+
+```bash
+# 1) Update code/docs/chart version as needed and merge to main
+
+# 2) Create and push an annotated release tag for the image
+git checkout main
+git pull --ff-only
+git tag -a vX.Y.Z -m "Release vX.Y.Z"
+git push origin vX.Y.Z
+
+# 3) Create/publish the matching GitHub Release for that tag
+#    This triggers image + chart publication workflows.
 ```
 
 ## Feature matrix

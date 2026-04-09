@@ -1,14 +1,9 @@
 name: Package and Push Helm Chart (GHCR OCI)
 
 on:
-  push:
-    branches:
-      - main
-    paths:
-      - "helm/salt-master/**"
-      - ".github/workflows/helm-chart-ghcr.yml"
-    paths-ignore:
-      - "**/*.md"
+  release:
+    types:
+      - published
   workflow_dispatch:
 
 concurrency:
@@ -49,8 +44,17 @@ jobs:
           set -euo pipefail
           chart_version="$(awk -F': ' '/^version:/{print $2}' ./helm/salt-master/Chart.yaml | tr -d '"')"
           app_version="$(awk -F': ' '/^appVersion:/{print $2}' ./helm/salt-master/Chart.yaml | tr -d '"')"
+          release_tag=""
+          if [[ "${GITHUB_EVENT_NAME}" == "release" ]]; then
+            release_tag="${{ github.event.release.tag_name }}"
+          fi
+          if [[ -n "${release_tag}" && ! "${release_tag}" =~ ^v[0-9]+\.[0-9]+\.[0-9]+([-.][0-9A-Za-z.-]+)?$ ]]; then
+            echo "::error::GitHub release tag must be semver-like and start with v."
+            exit 1
+          fi
           echo "version=${chart_version}" >> "$GITHUB_OUTPUT"
           echo "app_version=${app_version}" >> "$GITHUB_OUTPUT"
+          echo "release_tag=${release_tag}" >> "$GITHUB_OUTPUT"
           mkdir -p dist
           helm lint ./helm/salt-master
           helm package ./helm/salt-master --destination ./dist
@@ -75,6 +79,9 @@ jobs:
             echo "- Chart: \`${chart_ref}\`"
             echo "- Chart version: \`${chart_version}\`"
             echo "- App version: \`${app_version}\`"
+            if [[ -n "${{ steps.chart.outputs.release_tag }}" ]]; then
+              echo "- Triggering release tag: \`${{ steps.chart.outputs.release_tag }}\`"
+            fi
             echo
             echo "### Deterministic deploy pin"
             echo

@@ -7,6 +7,7 @@ Start here:
 Core operations:
 
 - `quickstart.md`: fast deploy/provision flow for Salt operators.
+- `release-process.md`: release-driven GHCR publication and public package checks.
 - `service-exposure.md`: NodePort/ClusterIP/LoadBalancer exposure and security.
 - `identity.md`: StatefulSet identity model and `SALT_MASTER_ID` defaults.
 - `config-management.md`: generated vs external config modes and rollout model.

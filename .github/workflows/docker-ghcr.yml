@@ -1,19 +1,29 @@
 name: Build and Push Docker Image
 
 on:
-  push:
-    branches:
-      - main
-    paths-ignore:
-      - "**/*.md"
+  release:
+    types:
+      - published
   workflow_dispatch:
+    inputs:
+      release_tag:
+        description: "Release tag to publish (for example v0.1.5)"
+        required: true
+      publish_latest:
+        description: "Also publish/update the latest tag"
+        required: true
+        default: "false"
+        type: choice
+        options:
+          - "false"
+          - "true"
 
 concurrency:
   group: ${{ github.workflow }}-${{ github.ref }}
   cancel-in-progress: true
 
 permissions:
-  contents: write
+  contents: read
   packages: write
 
 jobs:
@@ -34,26 +44,31 @@ jobs:
         with:
           fetch-depth: 0
 
-      - name: Determine next semver patch
-        id: semver
+      - name: Determine release metadata
+        id: release
         shell: bash
         run: |
           set -euo pipefail
-          git fetch --tags --force
-
-          latest_tag="$(git tag -l 'v[0-9]*.[0-9]*.[0-9]*' --sort=-v:refname | head -n1)"
-          if [[ -z "${latest_tag}" ]]; then
-            latest_tag="v0.0.0"
+          if [[ "${GITHUB_EVENT_NAME}" == "release" ]]; then
+            release_tag="${{ github.event.release.tag_name }}"
+            prerelease="${{ github.event.release.prerelease }}"
+            publish_latest="false"
+            if [[ "${prerelease}" != "true" ]]; then
+              publish_latest="true"
+            fi
+          else
+            release_tag="${{ inputs.release_tag }}"
+            publish_latest="${{ inputs.publish_latest }}"
           fi
 
-          base="${latest_tag#v}"
-          IFS='.' read -r major minor patch <<< "${base}"
-          next_patch=$((patch + 1))
-          next_tag="v${major}.${minor}.${next_patch}"
+          if [[ ! "${release_tag}" =~ ^v[0-9]+\.[0-9]+\.[0-9]+([-.][0-9A-Za-z.-]+)?$ ]]; then
+            echo "::error::release_tag must be a semver-like tag starting with v (for example v0.1.5)."
+            exit 1
+          fi
 
-          echo "latest=${latest_tag}" >> "$GITHUB_OUTPUT"
-          echo "tag=${next_tag}" >> "$GITHUB_OUTPUT"
-          echo "version=${next_tag#v}" >> "$GITHUB_OUTPUT"
+          echo "tag=${release_tag}" >> "$GITHUB_OUTPUT"
+          echo "version=${release_tag#v}" >> "$GITHUB_OUTPUT"
+          echo "publish_latest=${publish_latest}" >> "$GITHUB_OUTPUT"
 
       - name: Set up Docker Buildx
         uses: docker/setup-buildx-action@v3
@@ -79,12 +94,9 @@ jobs:
             mirror_image="${MIRROR_IMAGE_REGISTRY}/${MIRROR_IMAGE_REPOSITORY}"
           fi
 
-          version="${{ steps.semver.outputs.version }}"
-          tag="${{ steps.semver.outputs.tag }}"
-          latest_enabled="false"
-          if [[ "${GITHUB_REF_NAME}" == "main" ]]; then
-            latest_enabled="true"
-          fi
+          version="${{ steps.release.outputs.version }}"
+          tag="${{ steps.release.outputs.tag }}"
+          latest_enabled="${{ steps.release.outputs.publish_latest }}"
 
           tags=(
             "${primary_image}:${version}"
@@ -151,16 +163,6 @@ jobs:
           cache-from: type=gha
           cache-to: type=gha,mode=max
 
-      - name: Create and push semver tag
-        shell: bash
-        run: |
-          set -euo pipefail
-          tag="${{ steps.semver.outputs.tag }}"
-          git config user.name "github-actions[bot]"
-          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
-          git tag -a "${tag}" -m "Release ${tag}"
-          git push origin "${tag}"
-
       - name: Write release summary
         shell: bash
         run: |
@@ -168,8 +170,9 @@ jobs:
           image="${{ steps.targets.outputs.primary_image }}"
           mirror_enabled="${{ steps.targets.outputs.mirror_enabled }}"
           mirror_image="${{ steps.targets.outputs.mirror_image }}"
-          tag="${{ steps.semver.outputs.tag }}"
-          version="${{ steps.semver.outputs.version }}"
+          tag="${{ steps.release.outputs.tag }}"
+          version="${{ steps.release.outputs.version }}"
+          latest_enabled="${{ steps.release.outputs.publish_latest }}"
           {
             echo "## Docker release summary"
             echo
@@ -179,7 +182,7 @@ jobs:
             fi
             echo "- Released tag: \`${tag}\`"
             echo "- Version: \`${version}\`"
-            echo "- Mutable tag also updated: \`latest\`"
+            echo "- Mutable tag updated: \`${latest_enabled}\`"
             echo
             echo "### Deterministic deploy pin"
             echo
