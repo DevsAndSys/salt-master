@@ -2,14 +2,14 @@
 
 ## Current image support
 
-The published image already includes:
+The published image supports `git_pillar` out of the box with the `gitpython`
+provider. It already includes:
 
 - `git`
 - `GitPython`
 
-It does not include `pygit2`, so the documented working baseline is the
-`gitpython` provider. Build a derivative image only if you specifically need
-`pygit2`.
+It does not include `pygit2`. Build a derivative image only if you specifically
+need that provider.
 
 ## Configure git_pillar
 

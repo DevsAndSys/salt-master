@@ -54,8 +54,8 @@ kubectl -n <salt-namespace> create secret generic salt-master-gpg \
   --from-file=private.asc=./pillar-private.asc
 ```
 
-Then import into keyring directory using an initContainer or baked entrypoint
-logic. Minimal pattern in pod shell:
+Then import into the keyring directory using an init container or custom image
+startup logic. Minimal pattern in pod shell:
 
 ```bash
 mkdir -p /var/lib/salt/gpgkeys
