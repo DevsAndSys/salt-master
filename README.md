@@ -3,23 +3,23 @@
 Published artifacts:
 
 - Image: `ghcr.io/devsandsys/salt-master`
-- Helm chart (OCI): `oci://ghcr.io/devsandsys/charts/salt-master`
+- Helm chart: `oci://ghcr.io/devsandsys/charts/salt-master`
 
-## Quick start (GHCR)
+## Quick start
 
 ```bash
 # Install directly from published chart + published image
 helm upgrade --install salt-master oci://ghcr.io/devsandsys/charts/salt-master \
-  --version 0.1.0 \
+  --version <chart-version> \
   --set image.repository=ghcr.io/devsandsys/salt-master \
   --set image.tag=vX.Y.Z
 ```
 
-If pull/install fails with auth errors, re-check package visibility in GHCR.
+If pull or install fails with auth errors, re-check package visibility in GHCR.
 
 For deterministic deploys in GitOps, pin both:
-- chart version (`--version`, for example `0.1.0`)
-- image tag (`vX.Y.Z` from an explicit GitHub Release), not `latest`
+- chart version via `--version`; source it from `helm/salt-master/Chart.yaml` at release time
+- image tag `vX.Y.Z` from an explicit GitHub Release, not `latest`
 
 Latest released image tags:
 
@@ -27,46 +27,6 @@ Latest released image tags:
 gh api repos/DevsAndSys/salt-master/tags --paginate | jq -r '.[].name' | sort -V | tail
 ```
 
-## Release hygiene (maintainers)
-
-Package publication is now release-driven. Pushing to `main` does not publish public
-artifacts. Maintainers publish the image/chart by creating a GitHub Release (or by
-running the publish workflows manually with an explicit tag for the image).
-
-Before publishing, confirm the GHCR package pages are set to public visibility if
-these artifacts are meant for anonymous pulls.
-
-If a bad release commit/tag is pushed by mistake, use this cleanup flow:
-
-```bash
-# 1) Revert bad commits in a dedicated fix branch (no history rewrite on main)
-git checkout -b fix/revert-bad-release origin/main
-git revert --no-edit <bad_commit_sha_1> [<bad_commit_sha_2> ...]
-git push -u origin fix/revert-bad-release
-# Open a PR and merge after checks pass
-
-# 2) Delete accidental remote tags
-git push origin :refs/tags/<bad_tag_1> :refs/tags/<bad_tag_2>
-
-# 3) (Optional) Delete workflow runs tied to bad SHAs
-gh run list --repo DevsAndSys/salt-master --limit 200 --json databaseId,headSha
-gh api -X DELETE /repos/DevsAndSys/salt-master/actions/runs/<run_id>
-```
-
-Release sequence:
-
-```bash
-# 1) Update code/docs/chart version as needed and merge to main
-
-# 2) Create and push an annotated release tag for the image
-git checkout main
-git pull --ff-only
-git tag -a vX.Y.Z -m "Release vX.Y.Z"
-git push origin vX.Y.Z
-
-# 3) Create/publish the matching GitHub Release for that tag
-#    This triggers image + chart publication workflows.
-```
 
 ## Feature matrix
 
@@ -92,13 +52,13 @@ git push origin vX.Y.Z
 | SSH client utilities | `ssh`, `sshpass` | Yes | `salt-ssh` connectivity and bootstrap flows |
 | Network diagnostics | `curl`, `ip`, `ping`, `nc` | Yes | Connectivity and service troubleshooting from pod |
 
-### Exposed ports
+### Image-exposed ports
 
 | Port | Protocol | Service | Related use case |
 |---|---|---|---|
 | `4505` | TCP | Salt publish bus | Master-to-minion command publish channel |
 | `4506` | TCP | Salt return bus | Minion-to-master return/event channel |
-| `8000` | TCP | `salt-api` (common default) | API/webhook integrations and external automation |
+| `8000` | TCP | `salt-api` | Available in the image for API and webhook integrations, but not exposed by the chart Service by default |
 
 ## Documentation
 

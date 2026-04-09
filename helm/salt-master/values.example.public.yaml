@@ -57,9 +57,6 @@ config:
                 - env: "base"
         gpg_keydir: "/var/lib/salt/gpgkeys"
         gpg_decrypt_must_succeed: true
-        reactor:
-          - "salt/job/*/new":
-            - "salt://reactor/pr_highstate_guard.sls"
 
 volumePermissions:
   enabled: true

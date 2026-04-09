@@ -1,14 +1,15 @@
 # GitFS
 
-## Current image constraint
+## Current image support
 
-This repository ships a minimal image. It does **not** include GitFS-specific
-runtime dependencies (`pygit2`/`GitPython`) or `git` binary packages.
+The published image already includes:
 
-If you need GitFS, build a derivative image that adds:
+- `git`
+- `GitPython`
 
-- `git` OS package
-- `pygit2` and/or `GitPython` Python packages
+It does not include `pygit2`, so the documented working baseline is the
+`gitpython` provider. Build a derivative image only if you specifically need
+`pygit2`.
 
 ## Configure master for GitFS
 
@@ -22,7 +23,7 @@ env:
     fileserver_backend:
       - roots
       - git
-    gitfs_provider: pygit2
+    gitfs_provider: gitpython
     gitfs_remotes:
       - ssh://git@github.com/example/salt-states.git
     gitfs_base: main
