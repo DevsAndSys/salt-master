@@ -1,6 +1,7 @@
 # Public-safe example values for this chart.
 # - No real hostnames, repos, tokens, or usernames.
 # - All secret references point to placeholder Secret names/keys.
+# - This example is a realistic reference profile, not a maximal feature dump.
 
 replicaCount: 1
 fullnameOverride: salt-master
@@ -22,34 +23,25 @@ config:
       data: |
         user: salt
         interface: 0.0.0.0
-        publish_port: 30505
-        ret_port: 30506
+        publish_port: 4505
+        ret_port: 4506
         worker_threads: 5
         log_level: info
         log_file: /dev/stdout
         log_level_logfile: info
         auto_accept: false
-        pki_dir: /var/lib/salt/pki/master
+        pki_dir: /var/lib/salt/pki
         sock_dir: /var/lib/salt/run/master
         pidfile: /var/lib/salt/run/salt-master.pid
         max_open_files: 64000
         extension_modules: "/var/lib/salt/extmods"
         id: salt-master-0.salt-master-headless.salt-master.svc.cluster.local
-        file_roots:
-          localtesting:
-            - "/var/lib/salt/localtesting"
         fileserver_backend:
           - gitfs
-          - file
         gitfs_provider: gitpython
         gitfs_base: main
-        gitfs_root: base
         gitfs_remotes:
           - ssh://git@github.com/example-org/salt-states.git
-        gitfs_saltenv_whitelist:
-          - "base"
-          - "dev"
-          - "pr-*"
         ext_pillar:
           - git:
             - "main ssh://git@github.com/example-org/salt-states.git":
@@ -74,12 +66,12 @@ readinessProbe:
   command:
     - sh
     - -ec
-    - gpg --homedir /var/lib/salt/gpgkeys --list-secret-keys --with-colons | grep -q '^sec:'
+    - nc -z 127.0.0.1 4505 && nc -z 127.0.0.1 4506
 
 service:
   type: NodePort
-  internalPublishPort: 30505
-  internalReturnPort: 30506
+  internalPublishPort: 4505
+  internalReturnPort: 4506
   nodePort:
     enabled: true
     publish: 30505
@@ -122,15 +114,6 @@ extraEnv:
         key: DNS_API_DOMAIN
 
 extraVolumes:
-  - name: minions
-    persistentVolumeClaim:
-      claimName: salt-master-minions
-  - name: pki-master
-    persistentVolumeClaim:
-      claimName: salt-master-keys
-  - name: localtesting
-    persistentVolumeClaim:
-      claimName: salt-master-localtesting
   - name: gitfs-ssh
     secret:
       secretName: salt-master-gitfs-ssh
@@ -142,13 +125,6 @@ extraVolumes:
     emptyDir: {}
 
 extraVolumeMounts:
-  - name: pki-master
-    mountPath: /var/lib/salt/pki/master
-    subPath: masterdata
-  - name: minions
-    mountPath: /var/lib/salt/pki/master/minions
-  - name: localtesting
-    mountPath: /var/lib/salt/localtesting
   - name: gitfs-ssh
     mountPath: /var/lib/salt/.ssh
     readOnly: true

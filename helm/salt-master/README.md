@@ -23,8 +23,9 @@ Start from:
 
 - `values.example.public.yaml`
 
-This file mirrors a production-style setup with external config, secret refs, GPG
-key prep, and a readiness probe. All identities and sensitive data remain placeholders.
+This file is a realistic reference profile with external config, Git-backed
+states and pillar, secret refs, GPG key preparation, and a Salt port readiness
+check. All identities and sensitive data remain placeholders.
 
 ## Public-safe extension points
 
